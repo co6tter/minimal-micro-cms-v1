@@ -4,31 +4,60 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Minimal microCMS</title>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <h1>Minimal microCMS</h1>
     <p>microCMSのサンプルです。</p>
 
     <h2>お知らせ</h2>
+    <div id="loading">Loading...</div>
     <ul id="news"></ul>
+    <button id="more" class="hidden">More</button>
 
     <script>
+      let currentIndex = 0;
+      const itemsPerPage = 2;
+
+      function loadMoreItems(res) {
+        const news = document.querySelector('#news');
+        for (
+          let i = currentIndex;
+          i < currentIndex + itemsPerPage && i < res.contents.length;
+          i++
+        ) {
+          const content = res.contents[i];
+          const li = document.createElement('li');
+          const h3 = document.createElement('h3');
+          h3.textContent = content.title;
+          const p = document.createElement('p');
+          p.textContent = content.body;
+          li.appendChild(h3);
+          li.appendChild(p);
+          news.appendChild(li);
+        }
+        currentIndex += itemsPerPage;
+        if (currentIndex >= res.contents.length) {
+          document.querySelector('#more').classList.add('hidden');
+        }
+      }
+
+      const loading = document.querySelector('#loading');
       fetch('api/search')
         .then(res => res.json())
         .then(res => {
-          const news = document.querySelector('#news');
-          res.contents.forEach(content => {
-            const li = document.createElement('li');
-            const h3 = document.createElement('h3');
-            h3.textContent = content.title;
-            const p = document.createElement('p');
-            p.textContent = content.body;
-            li.appendChild(h3);
-            li.appendChild(p);
-            news.appendChild(li);
-          });
+          loading.classList.add('hidden');
+          loadMoreItems(res);
+          if (res.contents.length > itemsPerPage) {
+            const more = document.querySelector('#more');
+            more.classList.remove('hidden');
+            more.addEventListener('click', () => loadMoreItems(res));
+          }
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+          console.error(err);
+          loading.textContent = 'Failed to load data. Please try again later.';
+        });
     </script>
   </body>
 </html>
